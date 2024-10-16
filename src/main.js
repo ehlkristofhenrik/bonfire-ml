@@ -1,21 +1,17 @@
 const brain = require("brain.js");
 const fs = require("fs");
 
-// Thanks to https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
-function shuffle(array) {
-  let currentIndex = array.length;
 
-  while (currentIndex != 0) {
-    let randomIndex = Math.floor(Math.random() * currentIndex);
+function shuffle(arr) {
+  let ret = [];
+  for(let i=0;i<arr.length;i++) {
+    let id = Math.floor( Math.random() * arr.length);
 
-    currentIndex--;
-
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex],
-      array[currentIndex],
-    ];
+    console.log(id);
+    ret.push(arr[id]);
+    arr.splice(id, 1);
   }
-  return array;
+  return ret;
 }
 
 let net = null;
@@ -48,6 +44,8 @@ ds = shuffle(
     attackers.slice(0, Math.min(admins.length, attackers.length)),
   ),
 );
+
+console.log(ds);
 
 const train = ds.slice(0, ds.length * 0.5);
 const test = ds.slice(ds.length * 0.1);
