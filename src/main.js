@@ -1,7 +1,7 @@
 const brain = require("brain.js");
 const fs = require("fs");
 
-
+// Shuffle array
 function shuffle(arr) {
   let ret = [];
   for(let i=0;i<arr.length;i++) {
@@ -14,9 +14,11 @@ function shuffle(arr) {
   return ret;
 }
 
+// Set network variables
 let net = null;
 let netjson = null;
 
+// Read in data
 let ds = JSON.parse(fs.readFileSync("static/output.json"))
   .filter((x) => !x.command.includes("python"))
   .map((x) => {
@@ -35,9 +37,11 @@ let ds = JSON.parse(fs.readFileSync("static/output.json"))
     };
   });
 
+// Filter by role
 let admins = ds.filter((x) => x.output[0] == 0);
 let attackers = ds.filter((x) => x.output[0] == 1);
 
+// Randomize dataset
 ds = shuffle(
   [].concat(
     admins.slice(0, Math.min(admins.length, attackers.length)),
@@ -45,42 +49,47 @@ ds = shuffle(
   ),
 );
 
-console.log(ds);
-
+// Train-test split
 const train = ds.slice(0, ds.length * 0.5);
 const test = ds.slice(ds.length * 0.1);
 
-// console.log(train, test);
-
+// Read network from file if exists
 if (fs.existsSync("network.json")) {
+  // Create network from file
   net = new brain.NeuralNetwork();
   netjson = JSON.parse(fs.readFileSync("network.json"));
   net.fromJSON(netjson);
+
 } else {
+
+  // Create new network
   const config = {
     binaryThresh: 0.5,
     hiddenLayers: [4, 5],
-    activation: "sigmoid", // supported activation types: ['sigmoid', 'relu', 'leaky-relu', 'tanh'],
+    activation: "sigmoid",
   };
 
+  // Train network
   net = new brain.NeuralNetwork(config);
-
   net.train(train);
   netjson = net.toJSON();
+
+  // Backup network
   fs.writeFileSync("network.json", JSON.stringify(netjson));
 }
 
 /*
-[ TP, FN ]
-[ FP, TN ]
+  Confusion Matrix
+  [ TP, FN ]
+  [ FP, TN ]
 */
-
 let matrix = [
   // P, N
   [0, 0],
   [0, 0],
 ];
 
+// Test predictions
 for (let sample of test) {
   let prediction = net.run(sample.input) > 0.9 ? 1 : 0;
   let expected = sample.output[0];
@@ -103,5 +112,6 @@ for (let sample of test) {
   }
 }
 
+// Output matrix
 console.log(`  CONFUSION MATRIX`);
 console.table(matrix);
